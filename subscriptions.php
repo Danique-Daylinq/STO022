@@ -1,5 +1,5 @@
 <?php
-// test
+// v1.04
 if (!defined('ABSPATH')) {
   die('You are not allowed to call this page directly.');
 }
