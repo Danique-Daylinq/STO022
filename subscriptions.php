@@ -5,6 +5,7 @@ if (!defined('ABSPATH')) {
 }
 
 MeprHooks::do_action('mepr_before_account_subscriptions', $mepr_current_user);
+include_once get_stylesheet_directory() . '/pronamic-ideal/subscription-id.php';
 
 ?>
 
@@ -12,38 +13,6 @@ MeprHooks::do_action('mepr_before_account_subscriptions', $mepr_current_user);
 
 <?php
 
-echo "before include";
-include_once __DIR__ . '/../../pronamic-ideal/subscription-id.php';
-echo "after include";
-
-function generate_cancel_url($subscription_id, $subscription_key) {
-  if (empty($subscription_id) || empty($subscription_key)) {
-    error_log('Cancel URL Error - Missing subscription ID or key');
-    return '#'; // Return a placeholder URL if parameters are missing
-  }
-
-  if (strpos($subscription_key, 'mp-sub-') !== false) {
-    $subscription_key = str_replace('mp-sub-', '', $subscription_key);
-  }
-  
-  if (strpos($subscription_key, 'subscr_') === false) {
-    $subscription_key = 'subscr_' . $subscription_key; // Prefix with 'subscr_' if missing
-  }
-  // Generate the cancel URL
-  $cancel_url = add_query_arg(
-    [
-      'subscription' => $subscription_id,
-      'key'          => $subscription_key,
-      'action'       => 'cancel',
-    ],
-    home_url('/') // Base URL
-  );
-
-  // Log the generated URL for debugging
-  error_log('Generated Cancel URL: ' . $cancel_url);
-
-  return $cancel_url;
-}
 
 
 if (!empty($subscriptions)) {
@@ -227,6 +196,7 @@ if (!empty($subscriptions)) {
     <div class="pronamic-pay-action-link">
       <div>
         <?php
+    
         // Generate the cancel URL
         $subscription_id = $subscription->id; // Assuming $subscription->id exists
         $subscription_key = $subscription->subscr_id; // Replace with the correct property for the subscription key
