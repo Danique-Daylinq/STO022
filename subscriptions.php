@@ -5,13 +5,14 @@ if (!defined('ABSPATH')) {
 }
 
 MeprHooks::do_action('mepr_before_account_subscriptions', $mepr_current_user);
-include_once get_stylesheet_directory() . '/pronamic-ideal/packages/wp-pay/core/src/Subscriptions/subscription-id.php';
 
 ?>
 
 <h1 class="mepr_page_header"><?php echo esc_html_x('Subscriptions', 'ui', 'memberpress'); ?></h1>
 
 <?php
+
+include_once __DIR__ . '/../../../pronamic-ideal/packages/wp-pay/core/src/Subscriptions/subscription-id.php';
 
 
 
@@ -190,47 +191,28 @@ if (!empty($subscriptions)) {
     </svg>
 
     <div class="mepr-tooltip-content">
-  <pre><?php var_dump($is_sub); ?></pre>
+  <pre><?php var_dump($subscription_id); ?></pre >
 
-  <?php if ($is_sub) : ?>
-  <div class="pronamic-pay-action-link">
-    <div>
-      <?php
-      // Get the subscription key from MemberPress
-      $subscription_key = $sub->subscr_id;
+  <?php if ($subscription_id) : ?>
+    <div class="pronamic-pay-action-link">
+      <div>
+        <?php
+        // Generate the cancel URL
+        $subscription_id = $subscription->id; // Assuming $subscription->id exists
+        $subscription_key = $subscription->subscr_id; // Replace with the correct property for the subscription key
 
-      if (!empty($subscription_key)) {
-        // Try to find the correct Pronamic subscription post
-        $pronamic_subscription = get_posts([
-          'post_type'  => 'pronamic_pay_subscription',
-          'meta_key'   => '_pronamic_subscription_key',
-          'meta_value' => $subscription_key,
-          'numberposts' => 1,
-        ]);
+        $cancel_url = generate_cancel_url($subscription_id, $subscription_key);
+        
 
-        if (!empty($pronamic_subscription)) {
-          $subscription_id = $pronamic_subscription[0]->ID;
-
-          // Generate cancel URL
-          $cancel_url = generate_cancel_url($subscription_id, $subscription_key);
-
-          // Output the cancel link
-          printf(
-            '<a class="pronamic-pay-action-link-anchor" href="%s">%s</a>',
-            esc_attr($cancel_url),
-            esc_html__('Cancel Subscription →', 'pronamic_ideal')
-          );
-        } else {
-          error_log("Pronamic subscription not found for key: " . $subscription_key);
-        }
-      } else {
-        error_log("Missing subscription key for subscription: " . print_r($sub, true));
-      }
-      ?>
+        printf(
+          '<a class="pronamic-pay-action-link-anchor" href="%s">%s</a>',
+          esc_attr($cancel_url),
+          esc_html__('Cancel Subscription →', 'pronamic_ideal')
+        );
+        ?>
+      </div>
     </div>
-  </div>
-<?php endif; ?>
-
+  <?php endif; ?>
 
   <?php echo $row_actions; ?>
 </div>
