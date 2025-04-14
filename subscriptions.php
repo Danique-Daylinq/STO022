@@ -3,8 +3,7 @@
 if (!defined('ABSPATH')) {
   die('You are not allowed to call this page directly.');
 }
-
-MeprHooks::do_action('mepr_before_account_subscriptions', $mepr_current_user);
++MeprHooks::do_action('mepr_before_account_subscriptions', $mepr_current_user);
 
 ?>
 
@@ -12,8 +11,83 @@ MeprHooks::do_action('mepr_before_account_subscriptions', $mepr_current_user);
 
 <?php
 
-include_once __DIR__ . '/../../../pronamic-ideal/packages/wp-pay/core/src/Subscriptions/subscription-id.php';
+use  Pronamic\WordPress\Pay\Payments\PaymentInfo;
 
+
+echo "before include";
+include_once __DIR__ . '/../../pronamic-ideal/subscription-id.php';
+echo "after include";
+// Correct the path to the plugin directory
+$pronamic_ideal_path = WP_PLUGIN_DIR . '/pronamic-ideal/packages/wp-pay/core/src/Subscriptions/Subscription.php';
+$pronamic_ideal_path_memberpress = WP_PLUGIN_DIR . '/pronamic-ideal/packages/wp-pay-extensions/memberpress/src/Admin/AdminSubscriptions.php';
+
+if (file_exists($pronamic_ideal_path)) {
+  require_once $pronamic_ideal_path;
+} else {
+  error_log('Pronamic iDEAL Subscriptions.php file not found at ' . $pronamic_ideal_path);
+}
+if (file_exists($pronamic_ideal_path_memberpress)) {
+  require_once $pronamic_ideal_path_memberpress;
+} else {
+  error_log('Pronamic iDEAL MemberPress AdminSubscriptions.php file not found at ' . $pronamic_ideal_path_memberpress);
+}
+
+use Pronamic\WordPress\Pay\Subscriptions\Subscription;
+
+
+// Function to get the cancel URL
+
+// Get the subscription object by ID
+$subscription = new Subscription(); // Create a new Subscription object
+
+// If subscription is not found, return an error message
+
+// Get the cancel URL from the subscription object
+$url = $subscription->get_cancel_url();
+
+\printf(
+  '<a class="pronamic-pay-action-link-anchor" href="%s">%s</a>',
+  \esc_attr($url),
+  \esc_html__('Customer subscription cancel page →', 'pronamic_ideal')
+);
+
+// Output or return the cancel URL
+
+
+echo 'Cancel URL: ' . esc_url($url) . '<br>';
+
+
+
+
+function generate_cancel_url($subscription_id, $subscription_key)
+{
+  if (empty($subscription_id) || empty($subscription_key)) {
+    error_log('Cancel URL Error - Missing subscription ID or key');
+    return '#'; // Return a placeholder URL if parameters are missing
+  }
+
+  if (strpos($subscription_key, 'mp-sub-') !== false) {
+    $subscription_key = str_replace('mp-sub-', '', $subscription_key);
+  }
+
+  if (strpos($subscription_key, 'subscr_') === false) {
+    $subscription_key = 'subscr_' . $subscription_key; // Prefix with 'subscr_' if missing
+  }
+  // Generate the cancel URL
+  $cancel_url = add_query_arg(
+    [
+      'subscription' => $subscription_id,
+      'key'          => $subscription_key,
+      'action'       => 'cancel',
+    ],
+    home_url('/') // Base URL
+  );
+
+  // Log the generated URL for debugging
+  error_log('Generated Cancel URL: ' . $cancel_url);
+
+  return $cancel_url;
+}
 
 
 if (!empty($subscriptions)) {
@@ -35,8 +109,8 @@ if (!empty($subscriptions)) {
       <tbody>
 
         <?php
-        
-      
+
+
         foreach ($subscriptions as $s) :
           if (trim($s->sub_type) == 'transaction') {
             $is_sub  = false;
@@ -185,40 +259,16 @@ if (!empty($subscriptions)) {
             </td>
 
             <td class="mepr-pro-account-table__col-actions" data-label="<?php _ex('Actions', 'ui', 'memberpress'); ?>">
-  <?php if ($row_actions) { ?>
-    <svg class="mepr-tooltip-trigger" xmlns="http://www.w3.org/2000/svg" class="" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-    </svg>
+              <?php if (trim($row_actions)) { ?>
+                <svg class="mepr-tooltip-trigger" xmlns="http://www.w3.org/2000/svg" class="" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                </svg>
 
-    <div class="mepr-tooltip-content">
-  <pre><?php var_dump($subscription_id); ?></pre >
-
-  <?php if ($subscription_id) : ?>
-    <div class="pronamic-pay-action-link">
-      <div>
-        <?php
-        // Generate the cancel URL
-        $subscription_id = $subscription->id; // Assuming $subscription->id exists
-        $subscription_key = $subscription->subscr_id; // Replace with the correct property for the subscription key
-
-        $cancel_url = generate_cancel_url($subscription_id, $subscription_key);
-        
-
-        printf(
-          '<a class="pronamic-pay-action-link-anchor" href="%s">%s</a>',
-          esc_attr($cancel_url),
-          esc_html__('Cancel Subscription →', 'pronamic_ideal')
-        );
-        ?>
-      </div>
-    </div>
-  <?php endif; ?>
-
-  <?php echo $row_actions; ?>
-</div>
-  <?php } ?>
-</td>
-
+                <div class="mepr-tooltip-content">
+                  <?php echo $row_actions; ?>
+                </div>
+              <?php } ?>
+            </td>
             <?php MeprHooks::do_action('mepr-account-subscriptions-td', $mepr_current_user, $s, $txn, $is_sub); ?>
           </tr>
         <?php endforeach; ?>
